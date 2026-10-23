@@ -7,8 +7,8 @@ it, and the answer is written only from the rows that came back.
 Data: the UCI **Online Retail** dataset (UK online gift retailer, 2010-12-01 to
 2011-12-09, 541,909 source rows), cleaned into SQLite.
 
-**Status:** data layer, SQL safety layer, agent, command-line interface and
-evaluation are done. The Streamlit app is **not built yet**.
+**Status:** data layer, SQL safety layer, agent, command-line interface, evaluation
+and the Streamlit demo are done.
 
 ## How it works
 
@@ -50,6 +50,29 @@ env -u PYTHONPATH .venv/bin/python -m pytest -v
 
 `env -u PYTHONPATH` is needed on machines where a ROS 2 `PYTHONPATH` leaks into the
 virtualenv. `.env`, `data/raw/` and `data/processed/` are git-ignored.
+
+## Demo
+
+A small Streamlit app: a question box, sample questions, a status badge (OK, needs
+clarification, out of scope, suspicious, unverified, error), the answer with its
+definition line, an expandable SQL section, the results table (with a warning when
+the result was cut off), timings, and a Limitations panel. There is no free SQL box:
+the model writes the SQL and the validator and read-only executor check it.
+
+```bash
+env -u PYTHONPATH .venv/bin/streamlit run app/app.py     # opens http://localhost:8501
+```
+
+It needs `data/processed/retail.sqlite` (see Setup) and `GROQ_API_KEY` in `.env`.
+Without the key the page explains what is missing and disables the question box;
+the key is never displayed.
+
+| | |
+|---|---|
+| ![Landing page with sample questions](docs/screenshots/demo_01_landing.png) | ![An answer with the SQL section open and the results table](docs/screenshots/demo_02_answer_sql_table.png) |
+| Landing page: question box, sample questions, no SQL input. | An answer: status badge, definition line, SQL used (open), results table. |
+| ![Monthly net revenue with the partial-month note](docs/screenshots/demo_03_monthly_revenue_partial_month.png) | ![Timings and the Limitations panel](docs/screenshots/demo_04_timings_and_limitations.png) |
+| Monthly net revenue; December 2011 is marked partial and the note is added by code. | Per-step timings and the Limitations panel. |
 
 ## Evaluation
 
