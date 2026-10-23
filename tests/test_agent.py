@@ -7,7 +7,13 @@ import httpx
 import pytest
 
 from src.retail_analytics import schema_prompt
-from src.retail_analytics.agent import RetailAgent, metric_definition
+from src.retail_analytics.agent import (
+    GUEST_ONLY_NOTE,
+    KNOWN_CUSTOMERS_NOTE,
+    RetailAgent,
+    customer_scope_note,
+    metric_definition,
+)
 from src.retail_analytics.grounding import allowed_numbers, ungrounded_numbers
 from src.retail_analytics.llm import GroqLLM, LLMError
 from src.retail_analytics.sql_safety import ALLOWED_COLUMNS
@@ -164,6 +170,56 @@ def test_partial_december_note_is_added_by_code_not_the_model(retail_db):
     llm = FakeLLM(classify=[ANSWERABLE], generate_sql=[sql], write_answer=["December had 5 lines (a full month)."])
     result = agent(llm, retail_db).ask("Lines in December?")
     assert "covers only 1-9 December" in result.answer
+
+
+@pytest.mark.parametrize("sql,expected", [
+    ("SELECT COUNT(DISTINCT customer_id) FROM sales WHERE has_customer_id = 1", KNOWN_CUSTOMERS_NOTE),
+    ("select count(*) from sales where HAS_CUSTOMER_ID=1 and country='France'", KNOWN_CUSTOMERS_NOTE),
+    ("SELECT COUNT(*) FROM sales WHERE has_customer_id <> 0", KNOWN_CUSTOMERS_NOTE),
+    ("SELECT COUNT(*) FROM sales WHERE has_customer_id IN (1)", KNOWN_CUSTOMERS_NOTE),
+    ("SELECT SUM(CASE WHEN has_customer_id = 1 THEN revenue END) FROM sales", KNOWN_CUSTOMERS_NOTE),
+    ("SELECT COUNT(*) FROM sales WHERE has_customer_id = 0", GUEST_ONLY_NOTE),
+    ("SELECT COUNT(*) FROM sales WHERE has_customer_id != 1", GUEST_ONLY_NOTE),
+    ("SELECT SUM(CASE WHEN has_customer_id = 1 THEN revenue END), SUM(CASE WHEN has_customer_id = 0 THEN revenue END) FROM sales", None),
+    ("SELECT has_customer_id, COUNT(*) FROM sales GROUP BY has_customer_id", None),
+    ("SELECT SUM(revenue) FROM sales WHERE country = 'France'", None),
+    ("SELECT COUNT(*) FROM sales WHERE customer_id IS NOT NULL", None),
+])
+def test_customer_scope_note_depends_on_how_the_sql_filters(sql, expected):
+    assert customer_scope_note(sql) == expected
+
+
+def test_known_customer_caveat_is_added_by_code_to_the_answer(retail_db):
+    sql = "SELECT COUNT(DISTINCT customer_id) AS customers FROM sales WHERE has_customer_id = 1"
+    llm = FakeLLM(classify=[ANSWERABLE], generate_sql=[sql], write_answer=["There are 2 customers."])
+    result = agent(llm, retail_db).ask("How many customers are there?")
+    assert result.status == "ok" and "2 customers" in result.answer
+    assert KNOWN_CUSTOMERS_NOTE in result.answer
+    assert "Definition used" not in result.answer  # no revenue column involved
+
+
+def test_caveat_is_added_once_and_goes_before_the_revenue_definition(retail_db):
+    sql = ("SELECT ROUND(SUM(revenue), 2) AS revenue FROM sales WHERE has_customer_id = 1")
+    llm = FakeLLM(classify=[ANSWERABLE], generate_sql=[sql], write_answer=["Known customers spent 40.77 GBP."])
+    answer = agent(llm, retail_db).ask("How much did known customers spend?").answer
+    assert answer.count(KNOWN_CUSTOMERS_NOTE) == 1
+    assert answer.index(KNOWN_CUSTOMERS_NOTE) < answer.index("Definition used")
+
+
+def test_no_caveat_when_the_query_does_not_filter_on_customer_id(retail_db):
+    llm = FakeLLM(classify=[ANSWERABLE], generate_sql=[GOOD_SQL], write_answer=[GOOD_ANSWER])
+    answer = agent(llm, retail_db).ask("Which country has the most sales?").answer
+    assert "known customer ID" not in answer and "without a customer ID" not in answer
+
+
+def test_guest_only_caveat_and_no_caveat_for_empty_results(retail_db):
+    llm = FakeLLM(classify=[ANSWERABLE], generate_sql=["SELECT COUNT(*) AS n FROM sales WHERE has_customer_id = 0"],
+                  write_answer=["3001 lines have no customer ID."])
+    assert GUEST_ONLY_NOTE in agent(llm, retail_db).ask("How many lines have no customer?").answer
+    empty = "SELECT invoice_no FROM sales WHERE has_customer_id = 1 AND country = 'Atlantis'"
+    llm = FakeLLM(classify=[ANSWERABLE], generate_sql=[empty])
+    result = agent(llm, retail_db).ask("Customers in Atlantis?")
+    assert result.status == "no_data" and KNOWN_CUSTOMERS_NOTE not in result.answer
 
 
 def test_provider_error_is_reported_cleanly(retail_db):

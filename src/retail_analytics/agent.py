@@ -124,6 +124,26 @@ def metric_definition(sql: str) -> str | None:
 PARTIAL_MONTH_NOTE = "Note: the data ends on 2011-12-09, so December 2011 covers only 1-9 December."
 
 
+KNOWN_CUSTOMERS_NOTE = (
+    "Note: customer figures only include sales lines with a known customer ID; "
+    "lines from guest or unknown buyers are excluded."
+)
+GUEST_ONLY_NOTE = "Note: this covers only sales lines without a customer ID (guest or unknown buyers)."
+_KNOWN = re.compile(r"\bhas_customer_id\s*(?:=\s*1\b|(?:<>|!=)\s*0\b|>\s*0\b|in\s*\(\s*1\s*\))", re.IGNORECASE)
+_GUEST = re.compile(r"\bhas_customer_id\s*(?:=\s*0\b|(?:<>|!=)\s*1\b|<\s*1\b|in\s*\(\s*0\s*\))", re.IGNORECASE)
+
+
+def customer_scope_note(sql: str) -> str | None:
+    """A caveat when the executed SQL filters on has_customer_id. A query that
+    compares against both known and unknown (e.g. a known/guest split) gets none."""
+    known, guest = bool(_KNOWN.search(sql)), bool(_GUEST.search(sql))
+    if known and not guest:
+        return KNOWN_CUSTOMERS_NOTE
+    if guest and not known:
+        return GUEST_ONLY_NOTE
+    return None
+
+
 def _mentions_december_2011(rows: list[list]) -> bool:
     return any(isinstance(c, str) and c.startswith("2011-12") for row in rows for c in row)
 
@@ -287,6 +307,9 @@ class RetailAgent:
             text += f"\n(Only the first {len(rows)} rows are shown; the result was cut off.)"
         if _mentions_december_2011(rows):  # added by code: the model got this wrong once
             text += f"\n{PARTIAL_MONTH_NOTE}"
+        scope_note = customer_scope_note(state["sql_to_run"])  # added by code: the model omitted it
+        if scope_note:
+            text += f"\n{scope_note}"
         if definition:
             text += f"\n{definition}"
         return {"status": "ok", "answer": text, "warnings": warnings, "answer_rewrites": rewrites}
