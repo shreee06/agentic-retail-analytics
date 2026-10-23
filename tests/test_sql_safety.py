@@ -58,7 +58,7 @@ def test_legitimate_query_runs_through_both_layers(query, retail_db):
 @pytest.mark.skipif(not REAL_DB.is_file(), reason="real database not built")
 @pytest.mark.parametrize("query", LEGIT, ids=[q["id"] for q in LEGIT])
 def test_legitimate_query_runs_on_real_database(query):
-    result = execute_readonly(REAL_DB, validate_sql(query["sql"]).sql)
+    result = execute_readonly(REAL_DB, validate_sql(query["sql"]).sql, timeout_s=30)
     assert result.columns
 
 
