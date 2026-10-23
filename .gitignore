@@ -1,0 +1,35 @@
+# Virtual environments
+.venv/
+venv/
+
+# Secrets (never commit)
+.env
+.env.*
+!.env.example
+
+# Data (reproduced by scripts, not stored in git)
+data/raw/
+data/processed/
+
+# Database files
+*.sqlite
+*.sqlite3
+*.db
+*.duckdb
+*.duckdb.wal
+
+# Caches and build output
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.ipynb_checkpoints/
+.streamlit/secrets.toml
+*.egg-info/
+build/
+dist/
+
+# OS / editor
+.DS_Store
+.vscode/
