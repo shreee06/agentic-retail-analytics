@@ -1,0 +1,18 @@
+{
+ "status": "complete",
+ "folder": "test-20261023-083723",
+ "meta": {
+  "model": "openai/gpt-oss-120b",
+  "date_utc": "2026-10-23T08:37:23+00:00",
+  "git_commit": "ae3e076cced24fb97e7bfafa15df574fc3f745a8",
+  "git_dirty_files": [],
+  "test_set_sha256": "bd3e6131c2f4111305543d3de5a28e0eef3444710e234c406f736bfcfe8b16db",
+  "test_set_user_sha256": "e19633b25b7f8532fd6fad3bbd219cd7d09e00bb4110599257c62b8a77aa4ef7",
+  "database": "retail.sqlite",
+  "database_sha256": "78cedbe8172e4328ffebe2ef13f3ee041b4210e12689a0b9f0cc270493ac658b",
+  "pace_s": 3.0,
+  "set": "test",
+  "question_count": 60,
+  "wall_seconds_this_session": 422.6
+ }
+}

@@ -1,0 +1,38 @@
+id,question,sql,rows_preview,answer,claims_supported,notes
+T21,How many return lines are there?,SELECT * FROM (SELECT COUNT(*) AS return_line_count FROM returns) LIMIT 1001,[[8665]],"There are **8,665** return lines.",,
+T10,"What was the net revenue between 2011-12-01 and 2011-12-09, inclusive?","SELECT * FROM (SELECT ROUND(SUM(amount), 2) AS net_revenue
+FROM (
+    SELECT revenue AS amount
+    FROM sales
+    WHERE invoice_date BETWEEN '2011-12-01' AND '2011-12-09'
+    UNION ALL
+    SELECT -return_value AS amount
+    FROM returns
+    WHERE invoice_date BETWEEN '2011-12-01' AND '2011-12-09'
+)) LIMIT 1001",[[440242.06]],"The net revenue for the period 2011‑12‑01 to 2011‑12‑09 was **£440,242.06**.
+Definition used: net revenue = sales revenue (quantity x unit price) minus the value of returns, in GBP; returns count in the period they were issued.",,
+T26,"Between January and November 2011, which month had the lowest net revenue? Give the month and the value.","WITH combined AS ( SELECT strftime('%Y-%m', invoice_date) AS month, revenue AS amount FROM sales WHERE invoice_date BETWEEN '2011-01-01' AND '2011-11-30' UNION ALL SELECT strftime('%Y-%m', invoice_date) AS month, -return_value AS amount FROM returns WHERE invoice_date BETWEEN '2011-01-01' AND '2011-11-30' ) SELECT month AS month, ROUND(SUM(amount), 2) AS net_revenue FROM combined GROUP BY month ORDER BY net_revenue ASC LIMIT 1","[[""2011-04"", 482061.93]]","April 2011 had the lowest net revenue, at £482,061.93.
+Definition used: net revenue = sales revenue (quantity x unit price) minus the value of returns, in GBP; returns count in the period they were issued.",,
+T04,What is the gross sales revenue before returns?,"SELECT * FROM (SELECT ROUND(SUM(revenue), 2) AS gross_sales_revenue FROM sales) LIMIT 1001",[[10245830.99]],"The gross sales revenue before returns is **£10,245,830.99**.
+Definition used: gross sales revenue = quantity x unit price, in GBP, before subtracting returns.",,
+T05,How many different products have been sold?,SELECT * FROM (SELECT COUNT(DISTINCT stock_code) AS product_count FROM sales) LIMIT 1001,[[3905]],"There have been **3,905** different products sold.",,
+T07,What is the net revenue for Germany?,"SELECT * FROM (SELECT ROUND(SUM(amount), 2) AS net_revenue_germany
+FROM (
+    SELECT revenue AS amount FROM sales WHERE country = 'Germany'
+    UNION ALL
+    SELECT -return_value AS amount FROM returns WHERE country = 'Germany'
+)) LIMIT 1001",[[200619.66]],"The net revenue for Germany is £200,619.66.
+Definition used: net revenue = sales revenue (quantity x unit price) minus the value of returns, in GBP; returns count in the period they were issued.",,
+T12,List the stock codes and units sold before returns of the 3 best-selling products in November 2011.,"SELECT stock_code, SUM(quantity) AS units_sold
+FROM sales
+WHERE strftime('%Y-%m', invoice_date) = '2011-11'
+GROUP BY stock_code
+ORDER BY units_sold DESC
+LIMIT 3","[[""23084"", 14913], [""22197"", 12452], [""22086"", 7898]]","- Stock code **23084** – 14,913 units sold  
+- Stock code **22197** – 12,452 units sold  
+- Stock code **22086** – 7,898 units sold",,
+T19,What percentage of sales lines have no customer ID?,"SELECT * FROM (SELECT ROUND(100.0 * SUM(CASE WHEN has_customer_id = 0 THEN 1 ELSE 0 END) / COUNT(*), 2) AS pct_no_customer_id FROM sales) LIMIT 1001",[[25.15]],25.15 % of sales lines have no customer ID.,,
+T02,How many orders were placed?,SELECT * FROM (SELECT COUNT(DISTINCT invoice_no) AS order_count FROM sales) LIMIT 1001,[[19773]],"There were **19,773** orders placed.",,
+T17,What is the average number of orders per customer?,"SELECT * FROM (WITH orders_per_customer AS (SELECT customer_id, COUNT(DISTINCT invoice_no) AS orders FROM sales WHERE has_customer_id = 1 GROUP BY customer_id) SELECT ROUND(AVG(orders), 2) AS avg_orders_per_customer FROM orders_per_customer) LIMIT 1001",[[4.25]],The average number of orders per customer is **4.25**.,,
+U05,How many orders contain more than 10 different products?,SELECT * FROM (SELECT COUNT(*) AS orders_with_over_10_products FROM (SELECT invoice_no FROM sales GROUP BY invoice_no HAVING COUNT(DISTINCT stock_code) > 10)) LIMIT 1001,[[12415]],"12,415 orders contain more than 10 different products.",,
+U02,How many customers placed orders in both 2010 and 2011?,"SELECT * FROM (WITH cust_years AS (SELECT customer_id, STRFTIME('%Y', invoice_date) AS yr FROM sales WHERE has_customer_id = 1 GROUP BY customer_id, yr) SELECT COUNT(*) AS customers_both_years FROM (SELECT customer_id FROM cust_years WHERE yr = '2010' INTERSECT SELECT customer_id FROM cust_years WHERE yr = '2011')) LIMIT 1001",[[764]],764 customers placed orders in both 2010 and 2011.,,
