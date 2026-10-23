@@ -40,7 +40,8 @@ def allowed_numbers(question: str, columns: list[str], rows: list[list]) -> set[
             if isinstance(cell, bool) or cell is None:
                 continue
             if isinstance(cell, (int, float)):
-                allowed.add(float(cell))
+                # the answer may say "fell 33.25%" for a row value of -33.25
+                allowed.update({float(cell), abs(float(cell))})
             else:
                 allowed.update(numbers_in_text(str(cell)))
     return allowed

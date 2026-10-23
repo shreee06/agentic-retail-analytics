@@ -183,5 +183,310 @@
   "id": "L037",
   "sql": "SELECT * FROM sales LIMIT -1",
   "why": "negative LIMIT gets wrapped and capped"
+ },
+ {
+  "id": "L038",
+  "sql": "SELECT COUNT(*) FROM sales WHERE has_customer_id = 1 AND country = 'France' AND invoice_date >= '2011-01-01'",
+  "why": "AND chain (found missing by the gold-answer check)"
+ },
+ {
+  "id": "L039",
+  "sql": "SELECT COUNT(*) FROM sales WHERE country = 'France' OR country = 'Spain'",
+  "why": "OR"
+ },
+ {
+  "id": "L040",
+  "sql": "SELECT COUNT(*) FROM sales WHERE (country = 'France' OR country = 'Spain') AND quantity > 5",
+  "why": "AND with parenthesised OR"
+ },
+ {
+  "id": "L041",
+  "sql": "SELECT DISTINCT country FROM sales s WHERE EXISTS (SELECT 1 FROM returns r WHERE r.country = s.country) ORDER BY country",
+  "why": "EXISTS"
+ },
+ {
+  "id": "L042",
+  "sql": "SELECT DISTINCT country FROM sales s WHERE NOT EXISTS (SELECT 1 FROM returns r WHERE r.country = s.country)",
+  "why": "NOT EXISTS"
+ },
+ {
+  "id": "L043",
+  "sql": "SELECT COUNT(*) FROM sales WHERE customer_id IS NULL AND description IS NOT NULL",
+  "why": "IS NULL / IS NOT NULL"
+ },
+ {
+  "id": "L044",
+  "sql": "SELECT DISTINCT country FROM sales WHERE country NOT IN ('United Kingdom', 'EIRE') AND country NOT LIKE 'S%' ORDER BY country COLLATE NOCASE",
+  "why": "NOT IN, NOT LIKE, COLLATE NOCASE"
+ },
+ {
+  "id": "L045",
+  "sql": "SELECT COUNT(*) FROM sales WHERE invoice_date >= date('2011-03-01') AND invoice_date < date('2011-03-01', '+1 month')",
+  "why": "date arithmetic"
+ },
+ {
+  "id": "L046",
+  "sql": "SELECT CASE WHEN revenue < 10 THEN 'small' WHEN revenue < 100 THEN 'medium' ELSE 'large' END AS size_band, COUNT(*) AS line_count, ROUND(SUM(revenue), 2) AS revenue FROM sales GROUP BY size_band ORDER BY revenue DESC",
+  "why": "CASE WHEN banding"
+ },
+ {
+  "id": "L047",
+  "sql": "SELECT country, SUM(CASE WHEN has_customer_id = 1 THEN revenue ELSE 0 END) AS known_revenue, SUM(CASE WHEN has_customer_id = 0 THEN revenue ELSE 0 END) AS guest_revenue FROM sales GROUP BY country ORDER BY known_revenue DESC LIMIT 10",
+  "why": "conditional aggregation"
+ },
+ {
+  "id": "L048",
+  "sql": "SELECT CASE WHEN CAST(strftime('%w', invoice_date) AS INTEGER) IN (0, 6) THEN 'weekend' ELSE 'weekday' END AS day_type, ROUND(SUM(revenue), 2) AS revenue FROM sales GROUP BY day_type",
+  "why": "CASE with CAST, strftime and IN"
+ },
+ {
+  "id": "L049",
+  "sql": "SELECT CASE country WHEN 'United Kingdom' THEN 'UK' ELSE 'Other' END AS region, COUNT(DISTINCT invoice_no) AS orders FROM sales GROUP BY region",
+  "why": "simple CASE form"
+ },
+ {
+  "id": "L050",
+  "sql": "SELECT ROUND(SUM(revenue), 2) AS revenue FROM sales WHERE invoice_date BETWEEN '2011-06-01' AND '2011-06-30'",
+  "why": "BETWEEN dates"
+ },
+ {
+  "id": "L051",
+  "sql": "SELECT COUNT(*) FROM sales WHERE unit_price BETWEEN 1 AND 2",
+  "why": "BETWEEN numbers"
+ },
+ {
+  "id": "L052",
+  "sql": "SELECT stock_code, quantity FROM sales WHERE quantity NOT BETWEEN 1 AND 1000 ORDER BY quantity DESC LIMIT 5",
+  "why": "NOT BETWEEN"
+ },
+ {
+  "id": "L053",
+  "sql": "SELECT country, ROUND(SUM(revenue), 2) AS revenue FROM sales WHERE country IN ('France', 'Germany', 'Spain') GROUP BY country",
+  "why": "IN list"
+ },
+ {
+  "id": "L054",
+  "sql": "SELECT COUNT(*) FROM returns WHERE stock_code IN (SELECT stock_code FROM sales WHERE revenue > 1000)",
+  "why": "IN subquery"
+ },
+ {
+  "id": "L055",
+  "sql": "SELECT DISTINCT stock_code FROM sales WHERE stock_code IN ('85123A', '22423', '47566') ORDER BY stock_code",
+  "why": "IN with DISTINCT"
+ },
+ {
+  "id": "L056",
+  "sql": "SELECT description, COUNT(*) AS n FROM sales WHERE description LIKE '%LANTERN%' GROUP BY description ORDER BY n DESC LIMIT 5",
+  "why": "LIKE contains"
+ },
+ {
+  "id": "L057",
+  "sql": "SELECT COUNT(DISTINCT stock_code) FROM sales WHERE stock_code LIKE '85%'",
+  "why": "LIKE prefix"
+ },
+ {
+  "id": "L058",
+  "sql": "SELECT country FROM sales WHERE country LIKE 'S_ain' GROUP BY country",
+  "why": "LIKE underscore wildcard"
+ },
+ {
+  "id": "L059",
+  "sql": "SELECT COALESCE(customer_id, 'GUEST') AS buyer, COUNT(*) AS line_count FROM sales GROUP BY buyer ORDER BY line_count DESC LIMIT 5",
+  "why": "COALESCE on NULL customer"
+ },
+ {
+  "id": "L060",
+  "sql": "SELECT stock_code, COALESCE(MAX(description), 'unknown') AS name, ROUND(SUM(revenue), 2) AS revenue FROM sales GROUP BY stock_code ORDER BY revenue DESC LIMIT 5",
+  "why": "COALESCE with MAX"
+ },
+ {
+  "id": "L061",
+  "sql": "SELECT ROUND(SUM(revenue) / NULLIF(SUM(quantity), 0), 4) AS revenue_per_unit FROM sales",
+  "why": "NULLIF to avoid divide by zero"
+ },
+ {
+  "id": "L062",
+  "sql": "SELECT country, ROUND(SUM(revenue) / NULLIF(COUNT(DISTINCT customer_id), 0), 2) AS revenue_per_customer FROM sales WHERE has_customer_id = 1 GROUP BY country ORDER BY 2 DESC LIMIT 5",
+  "why": "NULLIF per group"
+ },
+ {
+  "id": "L063",
+  "sql": "SELECT CAST(SUM(revenue) AS INTEGER) AS revenue_whole FROM sales",
+  "why": "CAST to INTEGER"
+ },
+ {
+  "id": "L064",
+  "sql": "SELECT CAST(strftime('%Y', invoice_date) AS INTEGER) AS year, COUNT(*) AS line_count FROM sales GROUP BY year",
+  "why": "CAST of strftime"
+ },
+ {
+  "id": "L065",
+  "sql": "SELECT CAST(quantity AS REAL) / 12 AS dozens FROM sales LIMIT 5",
+  "why": "CAST to REAL"
+ },
+ {
+  "id": "L066",
+  "sql": "SELECT CAST(customer_id AS INTEGER) AS id, ROUND(SUM(revenue), 2) AS revenue FROM sales WHERE has_customer_id = 1 GROUP BY id ORDER BY revenue DESC LIMIT 3",
+  "why": "CAST customer id"
+ },
+ {
+  "id": "L067",
+  "sql": "SELECT COUNT(DISTINCT country) FROM sales",
+  "why": "COUNT DISTINCT"
+ },
+ {
+  "id": "L068",
+  "sql": "SELECT DISTINCT country, has_customer_id FROM sales ORDER BY country, has_customer_id LIMIT 20",
+  "why": "DISTINCT on two columns"
+ },
+ {
+  "id": "L069",
+  "sql": "SELECT stock_code, SUM(quantity) AS units FROM sales GROUP BY stock_code HAVING SUM(quantity) > 10000 ORDER BY units DESC",
+  "why": "HAVING on aggregate"
+ },
+ {
+  "id": "L070",
+  "sql": "SELECT country, COUNT(DISTINCT customer_id) AS customers FROM sales WHERE has_customer_id = 1 GROUP BY country HAVING customers >= 50",
+  "why": "HAVING on alias"
+ },
+ {
+  "id": "L071",
+  "sql": "SELECT invoice_no, ROUND(SUM(revenue), 2) AS order_value FROM sales GROUP BY invoice_no HAVING order_value > 5000 AND COUNT(*) > 10 ORDER BY order_value DESC LIMIT 10",
+  "why": "HAVING with AND"
+ },
+ {
+  "id": "L072",
+  "sql": "SELECT COUNT(*) FROM sales WHERE revenue > (SELECT AVG(revenue) FROM sales)",
+  "why": "scalar subquery in WHERE"
+ },
+ {
+  "id": "L073",
+  "sql": "SELECT country, revenue FROM (SELECT country, ROUND(SUM(revenue), 2) AS revenue FROM sales GROUP BY country) WHERE revenue > 100000 ORDER BY revenue DESC",
+  "why": "subquery in FROM"
+ },
+ {
+  "id": "L074",
+  "sql": "SELECT stock_code FROM sales GROUP BY stock_code HAVING SUM(revenue) > (SELECT AVG(total) FROM (SELECT SUM(revenue) AS total FROM sales GROUP BY stock_code)) LIMIT 10",
+  "why": "nested subqueries in HAVING"
+ },
+ {
+  "id": "L075",
+  "sql": "SELECT stock_code, (SELECT ROUND(SUM(return_value), 2) FROM returns r WHERE r.stock_code = t.stock_code) AS returned FROM (SELECT stock_code FROM sales GROUP BY stock_code ORDER BY SUM(revenue) DESC LIMIT 5) t",
+  "why": "correlated scalar subquery"
+ },
+ {
+  "id": "L076",
+  "sql": "SELECT COUNT(*) FROM (SELECT customer_id FROM sales WHERE has_customer_id = 1 GROUP BY customer_id HAVING COUNT(DISTINCT strftime('%Y-%m', invoice_date)) >= 6)",
+  "why": "customers active in 6+ months"
+ },
+ {
+  "id": "L077",
+  "sql": "SELECT month, revenue, ROUND(100.0 * (revenue - LAG(revenue) OVER (ORDER BY month)) / LAG(revenue) OVER (ORDER BY month), 2) AS growth_pct FROM (SELECT strftime('%Y-%m', invoice_date) AS month, SUM(revenue) AS revenue FROM sales GROUP BY month)",
+  "why": "month-over-month growth with LAG"
+ },
+ {
+  "id": "L078",
+  "sql": "SELECT country, revenue, RANK() OVER (ORDER BY revenue DESC) AS rnk FROM (SELECT country, SUM(revenue) AS revenue FROM sales GROUP BY country) LIMIT 10",
+  "why": "RANK"
+ },
+ {
+  "id": "L079",
+  "sql": "SELECT month, ROUND(SUM(revenue) OVER (ORDER BY month ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW), 2) AS running_revenue FROM (SELECT strftime('%Y-%m', invoice_date) AS month, SUM(revenue) AS revenue FROM sales GROUP BY month)",
+  "why": "running total frame"
+ },
+ {
+  "id": "L080",
+  "sql": "SELECT customer_id, invoice_date, ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY invoice_date) AS visit_no FROM (SELECT DISTINCT customer_id, invoice_date FROM sales WHERE has_customer_id = 1) LIMIT 10",
+  "why": "ROW_NUMBER with PARTITION"
+ },
+ {
+  "id": "L081",
+  "sql": "SELECT stock_code, units, NTILE(4) OVER (ORDER BY units DESC) AS quartile FROM (SELECT stock_code, SUM(quantity) AS units FROM sales GROUP BY stock_code) LIMIT 10",
+  "why": "NTILE"
+ },
+ {
+  "id": "L082",
+  "sql": "SELECT country, month, ROUND(100.0 * revenue / SUM(revenue) OVER (PARTITION BY month), 2) AS share_pct FROM (SELECT country, strftime('%Y-%m', invoice_date) AS month, SUM(revenue) AS revenue FROM sales GROUP BY country, month) WHERE month = '2011-11' ORDER BY share_pct DESC LIMIT 5",
+  "why": "share of total with window SUM"
+ },
+ {
+  "id": "L083",
+  "sql": "SELECT strftime('%w', invoice_date) AS weekday, ROUND(SUM(revenue), 2) AS revenue FROM sales GROUP BY weekday ORDER BY weekday",
+  "why": "strftime weekday"
+ },
+ {
+  "id": "L084",
+  "sql": "SELECT strftime('%H', invoice_datetime) AS hour, COUNT(DISTINCT invoice_no) AS orders FROM sales GROUP BY hour ORDER BY hour",
+  "why": "strftime hour"
+ },
+ {
+  "id": "L085",
+  "sql": "SELECT date(MAX(invoice_date), '-30 days') AS thirty_days_before_end FROM sales",
+  "why": "date with modifier"
+ },
+ {
+  "id": "L086",
+  "sql": "SELECT CAST(julianday(MAX(invoice_date)) - julianday(MIN(invoice_date)) AS INTEGER) AS days_covered FROM sales",
+  "why": "julianday difference"
+ },
+ {
+  "id": "L087",
+  "sql": "SELECT strftime('%Y-W%W', invoice_date) AS week, ROUND(SUM(revenue), 2) AS revenue FROM sales GROUP BY week ORDER BY revenue DESC LIMIT 3",
+  "why": "week of year"
+ },
+ {
+  "id": "L088",
+  "sql": "SELECT datetime(invoice_datetime, '+1 hour') AS shifted FROM sales LIMIT 3",
+  "why": "datetime modifier"
+ },
+ {
+  "id": "L089",
+  "sql": "SELECT 'sales' AS source, COUNT(*) AS n FROM sales UNION ALL SELECT 'returns', COUNT(*) FROM returns",
+  "why": "UNION ALL of counts"
+ },
+ {
+  "id": "L090",
+  "sql": "SELECT country FROM sales INTERSECT SELECT country FROM returns ORDER BY country",
+  "why": "INTERSECT"
+ },
+ {
+  "id": "L091",
+  "sql": "SELECT stock_code FROM sales EXCEPT SELECT stock_code FROM returns LIMIT 10",
+  "why": "EXCEPT"
+ },
+ {
+  "id": "L092",
+  "sql": "SELECT customer_id FROM sales WHERE has_customer_id = 1 UNION SELECT customer_id FROM returns WHERE has_customer_id = 1",
+  "why": "UNION (distinct), large result gets capped"
+ },
+ {
+  "id": "L093",
+  "sql": "SELECT s.country, ROUND(s.sales_total, 2) AS sales, ROUND(COALESCE(r.returns_total, 0), 2) AS returns, ROUND(s.sales_total - COALESCE(r.returns_total, 0), 2) AS net FROM (SELECT country, SUM(revenue) AS sales_total FROM sales GROUP BY country) s LEFT JOIN (SELECT country, SUM(return_value) AS returns_total FROM returns GROUP BY country) r ON s.country = r.country ORDER BY net DESC LIMIT 10",
+  "why": "LEFT JOIN of two aggregates (net by country)"
+ },
+ {
+  "id": "L094",
+  "sql": "SELECT s.stock_code, ROUND(100.0 * r.returned / s.sold, 2) AS return_rate_pct FROM (SELECT stock_code, SUM(quantity) AS sold FROM sales GROUP BY stock_code) s JOIN (SELECT stock_code, -SUM(quantity) AS returned FROM returns GROUP BY stock_code) r ON r.stock_code = s.stock_code WHERE s.sold > 1000 ORDER BY return_rate_pct DESC LIMIT 5",
+  "why": "return rate by product"
+ },
+ {
+  "id": "L095",
+  "sql": "SELECT COUNT(DISTINCT s.customer_id) FROM sales s JOIN returns r ON s.customer_id = r.customer_id WHERE s.has_customer_id = 1",
+  "why": "customers who bought and returned (join on customer)"
+ },
+ {
+  "id": "L096",
+  "sql": "SELECT COUNT(*) FROM sales s JOIN returns r ON r.invoice_no = 'C' || s.invoice_no",
+  "why": "join on concatenated invoice number"
+ },
+ {
+  "id": "L097",
+  "sql": "WITH s AS (SELECT strftime('%Y-%m', invoice_date) AS month, SUM(revenue) AS sales FROM sales GROUP BY month), r AS (SELECT strftime('%Y-%m', invoice_date) AS month, SUM(return_value) AS returns FROM returns GROUP BY month) SELECT s.month, ROUND(s.sales, 2) AS sales, ROUND(COALESCE(r.returns, 0), 2) AS returns, ROUND(s.sales - COALESCE(r.returns, 0), 2) AS net_revenue FROM s LEFT JOIN r ON r.month = s.month ORDER BY s.month",
+  "why": "CTE join: net by month"
+ },
+ {
+  "id": "L098",
+  "sql": "SELECT COUNT(*) AS lines, ROUND(SUM(s.revenue), 2) AS revenue, ROUND(SUM(r.return_value), 2) AS returned FROM sales s JOIN returns r ON s.stock_code = r.stock_code AND s.invoice_date = r.invoice_date WHERE s.stock_code = '22423'",
+  "why": "aggregates over a join on product and date"
  }
 ]

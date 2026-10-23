@@ -66,6 +66,8 @@ ALLOWED_FUNCTION_KEYS = frozenset(
         "timetostr", "tsordstotimestamp", "cast", "ceil", "floor",
         "rownumber", "rank", "denserank", "ntile", "lag", "lead",
         "firstvalue", "lastvalue", "percentrank", "cumedist",
+        # logical operators / predicates that sqlglot models as functions
+        "and", "or", "exists", "collate", "currentdate",
     }
 )
 # SQLite functions sqlglot does not model; they arrive as "Anonymous" calls.

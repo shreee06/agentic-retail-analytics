@@ -51,6 +51,10 @@ class AgentResult:
     warnings: list[str] = field(default_factory=list)
     steps: list[dict] = field(default_factory=list)  # [{"step": ..., "seconds": ...}]
     total_seconds: float = 0.0
+    # [{"attempt": 1, "stage": "validate"|"execute", "ok": bool, "error": str}]
+    attempt_log: list[dict] = field(default_factory=list)
+    answer_rewrites: int = 0  # 1 if the first answer draft failed the number check
+    error_kind: str | None = None  # LLMError.kind when the model call failed
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -72,6 +76,9 @@ class State(TypedDict, total=False):
     answer: str
     warnings: list[str]
     steps: Annotated[list[dict], operator.add]
+    attempt_log: Annotated[list[dict], operator.add]
+    answer_rewrites: int
+    error_kind: str
 
 
 def _clean_question(question: str) -> str:
@@ -152,7 +159,7 @@ class RetailAgent:
             try:
                 update = fn(state)
             except LLMError as error:  # provider problem: stop with a clear message
-                update = {"status": "error", "answer": str(error)}
+                update = {"status": "error", "answer": str(error), "error_kind": error.kind}
             seconds = round(time.perf_counter() - started, 3)
             return {**update, "steps": [{"step": name, "seconds": seconds}]}
 
@@ -206,9 +213,10 @@ class RetailAgent:
 
     def _validate(self, state: State) -> dict:
         result = validate_sql(state["sql"], self.max_rows)
+        log = {"attempt": state.get("attempt", 0), "stage": "validate", "ok": result.ok, "error": result.error or ""}
         if result.ok:
-            return {"sql_to_run": result.sql, "error": ""}
-        return {"error": f"Validation failed: {result.error}"}
+            return {"sql_to_run": result.sql, "error": "", "attempt_log": [log]}
+        return {"error": f"Validation failed: {result.error}", "attempt_log": [log]}
 
     def _execute(self, state: State) -> dict:
         try:
@@ -216,8 +224,11 @@ class RetailAgent:
                 self.db_path, state["sql_to_run"], self.max_rows, self.query_timeout_s
             )
         except QueryExecutionError as error:
-            return {"error": f"Execution failed: {error}"}
+            log = {"attempt": state.get("attempt", 0), "stage": "execute", "ok": False, "error": str(error)}
+            return {"error": f"Execution failed: {error}", "attempt_log": [log]}
+        log = {"attempt": state.get("attempt", 0), "stage": "execute", "ok": True, "error": ""}
         return {
+            "attempt_log": [log],
             "error": "",
             "columns": result.columns,
             "rows": [list(r) for r in result.rows],
@@ -252,6 +263,7 @@ class RetailAgent:
         )
         text = self.llm.complete(ANSWER_SYSTEM, user, step="write_answer", max_tokens=1200)
         bad = ungrounded_numbers(text, allowed)
+        rewrites = 1 if bad else 0
         if bad:  # one rewrite, naming the offending numbers
             text = self.llm.complete(
                 ANSWER_SYSTEM,
@@ -264,7 +276,12 @@ class RetailAgent:
         warnings = list(state.get("warnings", []))
         if bad:
             warnings.append(f"Answer quoted numbers that are not in the rows: {bad}")
-            return {"status": "unverified", "answer": _fallback_answer(columns, rows), "warnings": warnings}
+            return {
+                "status": "unverified",
+                "answer": _fallback_answer(columns, rows),
+                "warnings": warnings,
+                "answer_rewrites": rewrites,
+            }
         definition = metric_definition(state["sql_to_run"])
         if state["truncated"]:
             text += f"\n(Only the first {len(rows)} rows are shown; the result was cut off.)"
@@ -272,7 +289,7 @@ class RetailAgent:
             text += f"\n{PARTIAL_MONTH_NOTE}"
         if definition:
             text += f"\n{definition}"
-        return {"status": "ok", "answer": text, "warnings": warnings}
+        return {"status": "ok", "answer": text, "warnings": warnings, "answer_rewrites": rewrites}
 
     # -- routing ---------------------------------------------------------
     @staticmethod
@@ -333,7 +350,9 @@ class RetailAgent:
                 status="needs_clarification",
                 answer=f"Please keep the question under {MAX_QUESTION_CHARS} characters.",
             )
-        final = self.graph.invoke({"question": question, "attempt": 0, "steps": [], "warnings": []})
+        final = self.graph.invoke(
+            {"question": question, "attempt": 0, "steps": [], "warnings": [], "attempt_log": []}
+        )
         status = final.get("status") or "error"
         succeeded = status in {"ok", "unverified", "no_data"}
         return AgentResult(
@@ -348,4 +367,7 @@ class RetailAgent:
             warnings=final.get("warnings", []),
             steps=final.get("steps", []),
             total_seconds=round(time.perf_counter() - started, 3),
+            attempt_log=final.get("attempt_log", []),
+            answer_rewrites=final.get("answer_rewrites", 0),
+            error_kind=final.get("error_kind"),
         )

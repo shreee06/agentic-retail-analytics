@@ -237,6 +237,12 @@ def test_ungrounded_numbers_are_caught(answer, bad):
     assert bad in ungrounded_numbers(answer, allowed_numbers("?", COLUMNS, ROWS))
 
 
+def test_negative_row_values_may_be_written_as_a_decline():
+    allowed = allowed_numbers("?", ["change"], [[-33.25]])
+    assert ungrounded_numbers("Net revenue fell by 33.25%.", allowed) == []
+    assert ungrounded_numbers("Net revenue fell by 33.5%.", allowed) == ["33.5%"]
+
+
 def test_numbers_inside_text_cells_count_as_grounded():
     allowed = allowed_numbers("?", ["month"], [["2011-03"], ["WHITE METAL LANTERN 40x40cm"]])
     assert ungrounded_numbers("March 2011 (2011-03) and the 40x40cm lantern", allowed) == []
