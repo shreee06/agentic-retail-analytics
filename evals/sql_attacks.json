@@ -1,0 +1,650 @@
+[
+ {
+  "id": "A001",
+  "category": "write",
+  "sql": "DROP TABLE sales",
+  "why": "drop a table"
+ },
+ {
+  "id": "A002",
+  "category": "write",
+  "sql": "DROP TABLE IF EXISTS returns",
+  "why": "drop a table"
+ },
+ {
+  "id": "A003",
+  "category": "write",
+  "sql": "DROP INDEX idx_sales_date",
+  "why": "drop an index"
+ },
+ {
+  "id": "A004",
+  "category": "write",
+  "sql": "DELETE FROM sales",
+  "why": "delete all rows"
+ },
+ {
+  "id": "A005",
+  "category": "write",
+  "sql": "DELETE FROM sales WHERE country = 'France'",
+  "why": "delete some rows"
+ },
+ {
+  "id": "A006",
+  "category": "write",
+  "sql": "UPDATE sales SET revenue = 0",
+  "why": "tamper with revenue"
+ },
+ {
+  "id": "A007",
+  "category": "write",
+  "sql": "UPDATE returns SET return_value = 0 WHERE 1=1",
+  "why": "tamper with returns"
+ },
+ {
+  "id": "A008",
+  "category": "write",
+  "sql": "INSERT INTO sales (invoice_no) VALUES ('X')",
+  "why": "insert a row"
+ },
+ {
+  "id": "A009",
+  "category": "write",
+  "sql": "INSERT INTO sales SELECT * FROM sales",
+  "why": "insert from select"
+ },
+ {
+  "id": "A010",
+  "category": "write",
+  "sql": "REPLACE INTO sales (source_row_number, invoice_no) VALUES (1, 'X')",
+  "why": "REPLACE is an insert"
+ },
+ {
+  "id": "A011",
+  "category": "write",
+  "sql": "INSERT OR REPLACE INTO returns (source_row_number) VALUES (1)",
+  "why": "insert or replace"
+ },
+ {
+  "id": "A012",
+  "category": "write",
+  "sql": "ALTER TABLE sales ADD COLUMN x TEXT",
+  "why": "change schema"
+ },
+ {
+  "id": "A013",
+  "category": "write",
+  "sql": "ALTER TABLE sales RENAME TO sales_old",
+  "why": "rename a table"
+ },
+ {
+  "id": "A014",
+  "category": "write",
+  "sql": "CREATE TABLE evil (a TEXT)",
+  "why": "create a table"
+ },
+ {
+  "id": "A015",
+  "category": "write",
+  "sql": "CREATE TABLE evil AS SELECT * FROM sales",
+  "why": "create table as select"
+ },
+ {
+  "id": "A016",
+  "category": "write",
+  "sql": "CREATE VIEW v AS SELECT * FROM sales",
+  "why": "create a view"
+ },
+ {
+  "id": "A017",
+  "category": "write",
+  "sql": "CREATE TRIGGER t AFTER INSERT ON sales BEGIN DELETE FROM returns; END",
+  "why": "create a trigger"
+ },
+ {
+  "id": "A018",
+  "category": "write",
+  "sql": "CREATE INDEX i ON sales (country)",
+  "why": "create an index"
+ },
+ {
+  "id": "A019",
+  "category": "write",
+  "sql": "VACUUM",
+  "why": "rewrites the database file"
+ },
+ {
+  "id": "A020",
+  "category": "write",
+  "sql": "VACUUM INTO '/tmp/copy.sqlite'",
+  "why": "copy the database to a file"
+ },
+ {
+  "id": "A021",
+  "category": "write",
+  "sql": "REINDEX",
+  "why": "rebuild indexes"
+ },
+ {
+  "id": "A022",
+  "category": "write",
+  "sql": "ANALYZE",
+  "why": "writes sqlite_stat tables"
+ },
+ {
+  "id": "A023",
+  "category": "write",
+  "sql": "BEGIN TRANSACTION",
+  "why": "transaction control"
+ },
+ {
+  "id": "A024",
+  "category": "write",
+  "sql": "COMMIT",
+  "why": "transaction control"
+ },
+ {
+  "id": "A025",
+  "category": "write",
+  "sql": "SAVEPOINT sp",
+  "why": "transaction control"
+ },
+ {
+  "id": "A026",
+  "category": "non_select",
+  "sql": "EXPLAIN SELECT * FROM sales",
+  "why": "not a plain SELECT"
+ },
+ {
+  "id": "A027",
+  "category": "multi_statement",
+  "sql": "SELECT 1; DROP TABLE sales",
+  "why": "stacked statement"
+ },
+ {
+  "id": "A028",
+  "category": "multi_statement",
+  "sql": "SELECT * FROM sales; DELETE FROM sales",
+  "why": "stacked statement"
+ },
+ {
+  "id": "A029",
+  "category": "multi_statement",
+  "sql": "SELECT 1; SELECT 2",
+  "why": "two selects"
+ },
+ {
+  "id": "A030",
+  "category": "multi_statement",
+  "sql": "SELECT * FROM sales WHERE country = 'x'; DROP TABLE sales; --'",
+  "why": "classic injection"
+ },
+ {
+  "id": "A031",
+  "category": "multi_statement",
+  "sql": "SELECT 1;;DROP TABLE sales",
+  "why": "double semicolon"
+ },
+ {
+  "id": "A032",
+  "category": "multi_statement",
+  "sql": "SELECT 1;\nUPDATE sales SET revenue = 0;",
+  "why": "newline then update"
+ },
+ {
+  "id": "A033",
+  "category": "forbidden_table",
+  "sql": "SELECT * FROM excluded_rows",
+  "why": "audit table"
+ },
+ {
+  "id": "A034",
+  "category": "forbidden_table",
+  "sql": "SELECT * FROM EXCLUDED_ROWS",
+  "why": "case trick"
+ },
+ {
+  "id": "A035",
+  "category": "forbidden_table",
+  "sql": "SELECT * FROM \"excluded_rows\"",
+  "why": "double-quoted name"
+ },
+ {
+  "id": "A036",
+  "category": "forbidden_table",
+  "sql": "SELECT * FROM [excluded_rows]",
+  "why": "bracketed name"
+ },
+ {
+  "id": "A037",
+  "category": "forbidden_table",
+  "sql": "SELECT * FROM `excluded_rows`",
+  "why": "backtick name"
+ },
+ {
+  "id": "A038",
+  "category": "forbidden_table",
+  "sql": "SELECT invoice_no FROM sales UNION SELECT invoice_no FROM excluded_rows",
+  "why": "UNION into forbidden table"
+ },
+ {
+  "id": "A039",
+  "category": "forbidden_table",
+  "sql": "SELECT invoice_no FROM sales UNION ALL SELECT invoice_no FROM excluded_rows",
+  "why": "UNION ALL into forbidden table"
+ },
+ {
+  "id": "A040",
+  "category": "forbidden_table",
+  "sql": "SELECT * FROM sales WHERE invoice_no IN (SELECT invoice_no FROM excluded_rows)",
+  "why": "subquery in WHERE"
+ },
+ {
+  "id": "A041",
+  "category": "forbidden_table",
+  "sql": "SELECT (SELECT COUNT(*) FROM excluded_rows)",
+  "why": "scalar subquery"
+ },
+ {
+  "id": "A042",
+  "category": "forbidden_table",
+  "sql": "SELECT s.* FROM sales s JOIN excluded_rows e ON s.invoice_no = e.invoice_no",
+  "why": "join"
+ },
+ {
+  "id": "A043",
+  "category": "forbidden_table",
+  "sql": "WITH x AS (SELECT * FROM excluded_rows) SELECT * FROM x",
+  "why": "CTE reads forbidden table"
+ },
+ {
+  "id": "A044",
+  "category": "forbidden_table",
+  "sql": "WITH excluded_rows AS (SELECT 1) SELECT * FROM excluded_rows",
+  "why": "CTE shadowing a real table name"
+ },
+ {
+  "id": "A045",
+  "category": "forbidden_table",
+  "sql": "WITH sales AS (SELECT 1 AS revenue) SELECT * FROM sales",
+  "why": "CTE shadowing an allowed table"
+ },
+ {
+  "id": "A046",
+  "category": "forbidden_table",
+  "sql": "SELECT * FROM main.excluded_rows",
+  "why": "schema-qualified"
+ },
+ {
+  "id": "A047",
+  "category": "forbidden_table",
+  "sql": "SELECT * FROM main.sales",
+  "why": "schema-qualified allowed table"
+ },
+ {
+  "id": "A048",
+  "category": "forbidden_table",
+  "sql": "SELECT * FROM temp.sales",
+  "why": "temp schema"
+ },
+ {
+  "id": "A049",
+  "category": "forbidden_table",
+  "sql": "SELECT * FROM customers",
+  "why": "unknown table"
+ },
+ {
+  "id": "A050",
+  "category": "schema",
+  "sql": "SELECT * FROM sqlite_master",
+  "why": "schema table"
+ },
+ {
+  "id": "A051",
+  "category": "schema",
+  "sql": "SELECT name FROM sqlite_schema",
+  "why": "schema table alias"
+ },
+ {
+  "id": "A052",
+  "category": "schema",
+  "sql": "SELECT * FROM sqlite_temp_master",
+  "why": "temp schema table"
+ },
+ {
+  "id": "A053",
+  "category": "schema",
+  "sql": "SELECT sql FROM SQLITE_MASTER WHERE type = 'table'",
+  "why": "case trick"
+ },
+ {
+  "id": "A054",
+  "category": "schema",
+  "sql": "SELECT invoice_no FROM sales UNION SELECT sql FROM sqlite_master",
+  "why": "UNION into schema"
+ },
+ {
+  "id": "A055",
+  "category": "schema",
+  "sql": "SELECT * FROM sqlite_stat1",
+  "why": "stats table"
+ },
+ {
+  "id": "A056",
+  "category": "schema",
+  "sql": "SELECT rowid FROM sales",
+  "why": "hidden rowid column"
+ },
+ {
+  "id": "A057",
+  "category": "schema",
+  "sql": "SELECT sql FROM sales",
+  "why": "column that does not exist"
+ },
+ {
+  "id": "A058",
+  "category": "schema",
+  "sql": "SELECT sqlite_version()",
+  "why": "internal function"
+ },
+ {
+  "id": "A059",
+  "category": "pragma",
+  "sql": "PRAGMA table_info(sales)",
+  "why": "pragma statement"
+ },
+ {
+  "id": "A060",
+  "category": "pragma",
+  "sql": "PRAGMA writable_schema = 1",
+  "why": "pragma write"
+ },
+ {
+  "id": "A061",
+  "category": "pragma",
+  "sql": "PRAGMA query_only = OFF",
+  "why": "turn off read-only"
+ },
+ {
+  "id": "A062",
+  "category": "pragma",
+  "sql": "pragma database_list",
+  "why": "lowercase pragma"
+ },
+ {
+  "id": "A063",
+  "category": "pragma",
+  "sql": "SELECT * FROM pragma_table_info('sales')",
+  "why": "pragma table function"
+ },
+ {
+  "id": "A064",
+  "category": "pragma",
+  "sql": "SELECT * FROM pragma_database_list",
+  "why": "pragma table function"
+ },
+ {
+  "id": "A065",
+  "category": "pragma",
+  "sql": "SELECT name FROM pragma_function_list",
+  "why": "pragma table function"
+ },
+ {
+  "id": "A066",
+  "category": "attach",
+  "sql": "ATTACH DATABASE '/tmp/x.sqlite' AS x",
+  "why": "attach a file"
+ },
+ {
+  "id": "A067",
+  "category": "attach",
+  "sql": "ATTACH DATABASE ':memory:' AS m",
+  "why": "attach memory db"
+ },
+ {
+  "id": "A068",
+  "category": "attach",
+  "sql": "DETACH DATABASE main",
+  "why": "detach"
+ },
+ {
+  "id": "A069",
+  "category": "extension",
+  "sql": "SELECT load_extension('/tmp/evil.so')",
+  "why": "load native code"
+ },
+ {
+  "id": "A070",
+  "category": "extension",
+  "sql": "SELECT LOAD_EXTENSION('evil')",
+  "why": "case trick"
+ },
+ {
+  "id": "A071",
+  "category": "extension",
+  "sql": "SELECT readfile('/etc/passwd')",
+  "why": "read files"
+ },
+ {
+  "id": "A072",
+  "category": "extension",
+  "sql": "SELECT writefile('/tmp/x', 'data')",
+  "why": "write files"
+ },
+ {
+  "id": "A073",
+  "category": "extension",
+  "sql": "SELECT fts3_tokenizer('x')",
+  "why": "tokenizer hook"
+ },
+ {
+  "id": "A074",
+  "category": "extension",
+  "sql": "SELECT randomblob(1000000000)",
+  "why": "memory abuse"
+ },
+ {
+  "id": "A075",
+  "category": "extension",
+  "sql": "SELECT zeroblob(1000000000)",
+  "why": "memory abuse"
+ },
+ {
+  "id": "A076",
+  "category": "extension",
+  "sql": "SELECT printf('%1000000000d', 1)",
+  "why": "memory abuse via printf"
+ },
+ {
+  "id": "A077",
+  "category": "extension",
+  "sql": "SELECT json_extract('{}', '$')",
+  "why": "function not on allowlist"
+ },
+ {
+  "id": "A078",
+  "category": "comment",
+  "sql": "SELECT * FROM sales -- harmless",
+  "why": "line comment"
+ },
+ {
+  "id": "A079",
+  "category": "comment",
+  "sql": "SELECT * FROM sales /* harmless */",
+  "why": "block comment"
+ },
+ {
+  "id": "A080",
+  "category": "comment",
+  "sql": "SELECT 1; /* hide */ DROP TABLE sales",
+  "why": "comment hides a statement"
+ },
+ {
+  "id": "A081",
+  "category": "comment",
+  "sql": "SELECT * FROM sales WHERE 1=1 --\nAND 1=1",
+  "why": "comment with newline"
+ },
+ {
+  "id": "A082",
+  "category": "comment",
+  "sql": "DR/**/OP TABLE sales",
+  "why": "comment splits a keyword"
+ },
+ {
+  "id": "A083",
+  "category": "comment",
+  "sql": "SELECT * FROM sales/**/;/**/DELETE FROM sales",
+  "why": "comment between statements"
+ },
+ {
+  "id": "A084",
+  "category": "comment",
+  "sql": "SELECT * FROM sales WHERE country = 'x' --' OR '1'='1",
+  "why": "comment ends a quote"
+ },
+ {
+  "id": "A085",
+  "category": "comment",
+  "sql": "SELECT /*! DROP TABLE sales */ 1",
+  "why": "MySQL-style conditional comment"
+ },
+ {
+  "id": "A086",
+  "category": "case",
+  "sql": "dRoP tAbLe sales",
+  "why": "mixed-case drop"
+ },
+ {
+  "id": "A087",
+  "category": "case",
+  "sql": "DeLeTe FrOm sales",
+  "why": "mixed-case delete"
+ },
+ {
+  "id": "A088",
+  "category": "case",
+  "sql": "SeLeCt * FrOm ExCluDed_RoWs",
+  "why": "mixed-case forbidden table"
+ },
+ {
+  "id": "A089",
+  "category": "case",
+  "sql": "select * from \"SQLITE_MASTER\"",
+  "why": "quoted upper-case schema"
+ },
+ {
+  "id": "A090",
+  "category": "case",
+  "sql": "  \n\t DROP TABLE sales",
+  "why": "leading whitespace"
+ },
+ {
+  "id": "A091",
+  "category": "case",
+  "sql": "SELECT 1\u037eDROP TABLE sales",
+  "why": "Greek question mark looks like a semicolon"
+ },
+ {
+  "id": "A092",
+  "category": "case",
+  "sql": "SELECT 1\uff1bDROP TABLE sales",
+  "why": "fullwidth semicolon"
+ },
+ {
+  "id": "A093",
+  "category": "case",
+  "sql": "SELECT 1\u0000; DROP TABLE sales",
+  "why": "NUL byte"
+ },
+ {
+  "id": "A094",
+  "category": "cte_write",
+  "sql": "WITH x AS (DELETE FROM sales RETURNING *) SELECT * FROM x",
+  "why": "delete inside CTE"
+ },
+ {
+  "id": "A095",
+  "category": "cte_write",
+  "sql": "WITH x AS (SELECT 1) INSERT INTO sales (invoice_no) SELECT 'a' FROM x",
+  "why": "insert after CTE"
+ },
+ {
+  "id": "A096",
+  "category": "cte_write",
+  "sql": "WITH x AS (SELECT 1) UPDATE sales SET revenue = 0",
+  "why": "update after CTE"
+ },
+ {
+  "id": "A097",
+  "category": "cte_write",
+  "sql": "WITH x AS (SELECT 1) DELETE FROM returns",
+  "why": "delete after CTE"
+ },
+ {
+  "id": "A098",
+  "category": "cte_write",
+  "sql": "WITH x AS (UPDATE sales SET revenue = 0 RETURNING *) SELECT * FROM x",
+  "why": "update inside CTE"
+ },
+ {
+  "id": "A099",
+  "category": "resource_abuse",
+  "sql": "WITH RECURSIVE r(n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM r) SELECT n FROM r",
+  "why": "unbounded recursion"
+ },
+ {
+  "id": "A100",
+  "category": "malformed",
+  "sql": "",
+  "why": "empty"
+ },
+ {
+  "id": "A101",
+  "category": "malformed",
+  "sql": "   ",
+  "why": "whitespace only"
+ },
+ {
+  "id": "A102",
+  "category": "malformed",
+  "sql": ";",
+  "why": "just a semicolon"
+ },
+ {
+  "id": "A103",
+  "category": "malformed",
+  "sql": "SELECT",
+  "why": "incomplete"
+ },
+ {
+  "id": "A104",
+  "category": "malformed",
+  "sql": "SELECT * FROM sales WHERE country = ?",
+  "why": "bind parameter"
+ },
+ {
+  "id": "A105",
+  "category": "malformed",
+  "sql": "SELECT * FROM sales WHERE country = :c",
+  "why": "named parameter"
+ },
+ {
+  "id": "A106",
+  "category": "malformed",
+  "sql": "VALUES (1), (2)",
+  "why": "not a SELECT"
+ },
+ {
+  "id": "A107",
+  "category": "malformed",
+  "sql": "SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 UNION SELECT 1 ",
+  "why": "too long"
+ },
+ {
+  "id": "A108",
+  "category": "malformed",
+  "sql": "hello, please show me everything",
+  "why": "natural language, not SQL"
+ }
+]

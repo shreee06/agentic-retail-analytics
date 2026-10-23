@@ -1,0 +1,187 @@
+[
+ {
+  "id": "L001",
+  "sql": "SELECT SUM(revenue) FROM sales",
+  "why": "gross revenue"
+ },
+ {
+  "id": "L002",
+  "sql": "SELECT SUM(revenue) AS gross_revenue FROM sales;",
+  "why": "trailing semicolon"
+ },
+ {
+  "id": "L003",
+  "sql": "select sum(revenue) from sales where has_customer_id = 1",
+  "why": "lowercase, customer-level filter"
+ },
+ {
+  "id": "L004",
+  "sql": "SELECT country, ROUND(SUM(revenue), 2) AS revenue FROM sales GROUP BY country ORDER BY revenue DESC LIMIT 10",
+  "why": "top countries"
+ },
+ {
+  "id": "L005",
+  "sql": "SELECT stock_code, description, SUM(quantity) AS units FROM sales GROUP BY stock_code, description ORDER BY units DESC LIMIT 5",
+  "why": "top products"
+ },
+ {
+  "id": "L006",
+  "sql": "SELECT strftime('%Y-%m', invoice_date) AS month, SUM(revenue) AS revenue FROM sales GROUP BY month ORDER BY month",
+  "why": "monthly revenue"
+ },
+ {
+  "id": "L007",
+  "sql": "SELECT substr(invoice_date, 1, 7) AS month, COUNT(DISTINCT invoice_no) AS orders FROM sales GROUP BY 1 ORDER BY 1",
+  "why": "orders per month"
+ },
+ {
+  "id": "L008",
+  "sql": "SELECT COUNT(DISTINCT customer_id) FROM sales WHERE has_customer_id = 1",
+  "why": "distinct customers"
+ },
+ {
+  "id": "L009",
+  "sql": "SELECT COUNT(*) FROM sales",
+  "why": "row count"
+ },
+ {
+  "id": "L010",
+  "sql": "SELECT MIN(invoice_date), MAX(invoice_date) FROM sales",
+  "why": "date range"
+ },
+ {
+  "id": "L011",
+  "sql": "SELECT * FROM sales LIMIT 5",
+  "why": "star with limit"
+ },
+ {
+  "id": "L012",
+  "sql": "SELECT * FROM returns",
+  "why": "star without limit (gets wrapped)"
+ },
+ {
+  "id": "L013",
+  "sql": "SELECT invoice_no, quantity FROM sales WHERE invoice_date BETWEEN '2011-01-01' AND '2011-01-31' ORDER BY quantity DESC LIMIT 20",
+  "why": "date filter"
+ },
+ {
+  "id": "L014",
+  "sql": "SELECT DISTINCT country FROM sales ORDER BY country",
+  "why": "distinct"
+ },
+ {
+  "id": "L015",
+  "sql": "SELECT country, COUNT(*) AS n FROM sales GROUP BY country HAVING COUNT(*) > 1000",
+  "why": "having"
+ },
+ {
+  "id": "L016",
+  "sql": "SELECT description FROM sales WHERE description LIKE '%HEART%' LIMIT 10",
+  "why": "like"
+ },
+ {
+  "id": "L017",
+  "sql": "SELECT * FROM sales WHERE country IN ('France', 'Germany') LIMIT 10",
+  "why": "in list"
+ },
+ {
+  "id": "L018",
+  "sql": "SELECT CASE WHEN revenue > 100 THEN 'large' ELSE 'small' END AS size, COUNT(*) FROM sales GROUP BY size",
+  "why": "case"
+ },
+ {
+  "id": "L019",
+  "sql": "SELECT ROUND(AVG(unit_price), 2), CAST(SUM(quantity) AS REAL) / COUNT(*) FROM sales",
+  "why": "cast and round"
+ },
+ {
+  "id": "L020",
+  "sql": "SELECT COALESCE(customer_id, 'unknown') AS cust, SUM(revenue) FROM sales GROUP BY cust ORDER BY 2 DESC LIMIT 5",
+  "why": "coalesce"
+ },
+ {
+  "id": "L021",
+  "sql": "SELECT SUM(return_value) FROM returns",
+  "why": "return value"
+ },
+ {
+  "id": "L022",
+  "sql": "SELECT (SELECT SUM(revenue) FROM sales) - (SELECT SUM(return_value) FROM returns) AS net_revenue",
+  "why": "net revenue"
+ },
+ {
+  "id": "L023",
+  "sql": "WITH monthly AS (SELECT strftime('%Y-%m', invoice_date) AS month, SUM(revenue) AS revenue FROM sales GROUP BY month) SELECT month, revenue FROM monthly ORDER BY revenue DESC LIMIT 3",
+  "why": "CTE"
+ },
+ {
+  "id": "L024",
+  "sql": "WITH g AS (SELECT stock_code, SUM(revenue) AS rev FROM sales GROUP BY stock_code), r AS (SELECT stock_code, SUM(return_value) AS ret FROM returns GROUP BY stock_code) SELECT g.stock_code, g.rev, COALESCE(r.ret, 0) AS ret FROM g LEFT JOIN r ON g.stock_code = r.stock_code ORDER BY g.rev DESC LIMIT 10",
+  "why": "two CTEs and a join"
+ },
+ {
+  "id": "L025",
+  "sql": "SELECT s.country, SUM(s.revenue) FROM sales AS s WHERE s.has_customer_id = 1 GROUP BY s.country",
+  "why": "table alias"
+ },
+ {
+  "id": "L026",
+  "sql": "SELECT stock_code, revenue, RANK() OVER (ORDER BY revenue DESC) AS rnk FROM sales LIMIT 10",
+  "why": "window function"
+ },
+ {
+  "id": "L027",
+  "sql": "SELECT month, revenue, LAG(revenue) OVER (ORDER BY month) AS prev FROM (SELECT strftime('%Y-%m', invoice_date) AS month, SUM(revenue) AS revenue FROM sales GROUP BY month)",
+  "why": "subquery in FROM and LAG"
+ },
+ {
+  "id": "L028",
+  "sql": "SELECT invoice_no FROM sales UNION SELECT invoice_no FROM returns LIMIT 10",
+  "why": "UNION of allowed tables"
+ },
+ {
+  "id": "L029",
+  "sql": "SELECT customer_id, COUNT(DISTINCT invoice_no) AS orders FROM sales WHERE has_customer_id = 1 GROUP BY customer_id HAVING orders > 5 ORDER BY orders DESC LIMIT 10",
+  "why": "repeat customers"
+ },
+ {
+  "id": "L030",
+  "sql": "SELECT julianday(MAX(invoice_date)) - julianday(MIN(invoice_date)) FROM sales",
+  "why": "julianday"
+ },
+ {
+  "id": "L031",
+  "sql": "SELECT date(invoice_date, 'start of month') AS m, COUNT(*) FROM sales GROUP BY m",
+  "why": "date function"
+ },
+ {
+  "id": "L032",
+  "sql": "SELECT UPPER(country), LENGTH(description), TRIM(description) FROM sales LIMIT 3",
+  "why": "string functions"
+ },
+ {
+  "id": "L033",
+  "sql": "SELECT description FROM sales WHERE description LIKE '%--%' LIMIT 3",
+  "why": "'--' inside a string literal is not a comment"
+ },
+ {
+  "id": "L034",
+  "sql": "SELECT * FROM sales WHERE description = 'x; DROP TABLE sales' LIMIT 3",
+  "why": "';' inside a string literal"
+ },
+ {
+  "id": "L035",
+  "sql": "SELECT \"sales\".\"revenue\" FROM \"sales\" LIMIT 3",
+  "why": "quoted names"
+ },
+ {
+  "id": "L036",
+  "sql": "SELECT * FROM sales LIMIT 100000",
+  "why": "huge LIMIT gets wrapped and capped"
+ },
+ {
+  "id": "L037",
+  "sql": "SELECT * FROM sales LIMIT -1",
+  "why": "negative LIMIT gets wrapped and capped"
+ }
+]
