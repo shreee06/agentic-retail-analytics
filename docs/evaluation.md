@@ -65,13 +65,38 @@ exponential backoff (5 s, 10 s, ... capped at 60 s, honouring `Retry-After`), up
 to 5 times. Retries and waiting time are reported on their own. A question that
 is still rate-limited after that is **not scored** and is listed by id.
 
+## Running the frozen test set, and resuming it
+
+`scripts/run_eval.py --set test` scores `test_set.json` + `test_set_user.json`
+once. Before it starts it checks the frozen hash and writes
+`evals/results/test_run_record.json` (status `in_progress`) with the model, UTC
+date, git commit (and any uncommitted files), the SHA-256 of both question files
+and of the database, and the pacing used. Each finished question is appended to
+`records.jsonl` immediately.
+
+* **Interrupted run (crash, Ctrl-C, lost connection):** run the same command with
+  `--resume`. Questions that already have a score are reused and NOT asked again;
+  only the remaining ones are asked. Without `--resume` the runner refuses to
+  start while a run is in progress, so a restart cannot silently re-score.
+* **Rate-limited run:** a question that is still rate-limited after 5 backoff
+  retries is never scored (so nothing is "scored twice"). The run stays
+  `in_progress`; `--resume` tries only those questions again.
+* **Finished run:** status becomes `complete`. A second scoring run needs
+  `--force` and must be reported as such.
+* The question files may not change between start and resume (their hashes are
+  compared).
+
 ## What the metrics cannot see: manual review
 
 The number check only tests digits. A sentence such as "December was a full
 month" can be false with every number correct (this happened once). The runner
 exports a seeded random sample of answers to `manual_review.csv`; a human fills
 `claims_supported` with `yes` / `partial` / `no`, and
-`summarize_manual_review` reports the supported rate.
+`summarize_manual_review` reports the supported rate = `yes` / (`yes` + `partial`
++ `no`), counting only rows that were filled in. Mark `yes` only if EVERY claim in
+the sentence is supported by the SQL and the returned rows (including words such as
+"highest", "increase", "full month", "all customers"); `partial` if some claims are
+supported and some are not or cannot be checked; `no` if a claim is contradicted.
 
 ## Known limits
 

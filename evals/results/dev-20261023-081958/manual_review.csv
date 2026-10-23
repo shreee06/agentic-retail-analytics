@@ -1,0 +1,33 @@
+id,question,sql,rows_preview,answer,claims_supported,notes
+D06,How many distinct customers are there in France?,SELECT * FROM (SELECT COUNT(DISTINCT customer_id) AS distinct_customers FROM sales WHERE country = 'France' AND has_customer_id = 1) LIMIT 1001,[[87]],There are **87** distinct customers in France.,,
+D03,List the stock codes and units sold before returns of the 3 products with the most units sold before returns.,"SELECT stock_code, SUM(quantity) AS units_sold
+FROM sales
+GROUP BY stock_code
+ORDER BY units_sold DESC
+LIMIT 3","[[""23843"", 80995], [""23166"", 78033], [""22197"", 56898]]","- 23843 – 80,995 units sold  
+- 23166 – 78,033 units sold  
+- 22197 – 56,898 units sold",,
+D07,Which customer has the highest net revenue? Give the customer ID and the value.,"WITH combined AS ( SELECT customer_id AS cust, revenue AS amount FROM sales WHERE has_customer_id = 1 UNION ALL SELECT customer_id AS cust, -return_value AS amount FROM returns WHERE has_customer_id = 1 ) SELECT cust AS customer_id, ROUND(SUM(amount), 2) AS net_revenue FROM combined GROUP BY cust ORDER BY net_revenue DESC LIMIT 1","[[""14646"", 278778.02]]","Customer 14646 has the highest net revenue: £278,778.02.
+Definition used: net revenue = sales revenue (quantity x unit price) minus the value of returns, in GBP; returns count in the period they were issued.",,
+D01,How many sales lines are there in total?,SELECT * FROM (SELECT COUNT(*) AS total_sales_lines FROM sales) LIMIT 1001,[[522446]],"There are **522,446** sales lines in total.",,
+D08,What is the total return value for Germany?,"SELECT * FROM (SELECT ROUND(SUM(return_value), 2) AS total_return_value FROM returns WHERE country = 'Germany') LIMIT 1001",[[4761.49]],"The total return value for Germany is **£4,761.49**.
+Definition used: return value = units returned x unit price, in GBP.",,
+D05,What was the net revenue in the United Kingdom in 2011?,"SELECT * FROM (SELECT ROUND(SUM(amount), 2) AS net_revenue
+FROM (
+    SELECT revenue AS amount
+    FROM sales
+    WHERE country = 'United Kingdom'
+      AND strftime('%Y', invoice_date) = '2011'
+    UNION ALL
+    SELECT -return_value AS amount
+    FROM returns
+    WHERE country = 'United Kingdom'
+      AND strftime('%Y', invoice_date) = '2011'
+)) LIMIT 1001",[[7589109.78]],"The net revenue in the United Kingdom for 2011 was £7,589,109.78.
+Definition used: net revenue = sales revenue (quantity x unit price) minus the value of returns, in GBP; returns count in the period they were issued.",,
+D09,How many return lines are there for product 22423?,SELECT * FROM (SELECT COUNT(*) AS return_line_count FROM returns WHERE stock_code = '22423') LIMIT 1001,[[180]],There are **180** return lines for product 22423.,,
+D10,By what percentage did net revenue change from February 2011 to March 2011?,"SELECT * FROM (WITH month_rev AS (SELECT strftime('%Y-%m', invoice_date) AS month, ROUND(SUM(revenue) - SUM(return_value), 2) AS net_rev FROM (SELECT invoice_date, revenue, 0 AS return_value FROM sales UNION ALL SELECT invoice_date, 0, return_value FROM returns) GROUP BY month) SELECT ROUND(((mr_march.net_rev - mr_feb.net_rev) * 100.0) / NULLIF(mr_feb.net_rev, 0), 2) AS pct_change FROM month_rev mr_feb JOIN month_rev mr_march ON mr_feb.month = '2011-02' AND mr_march.month = '2011-03') LIMIT 1001",[[36.01]],"The net revenue increased by 36.01 percent from February 2011 to March 2011.
+Definition used: net revenue = sales revenue (quantity x unit price) minus the value of returns, in GBP; returns count in the period they were issued.",,
+D04,How many orders came from Spain?,SELECT * FROM (SELECT COUNT(DISTINCT invoice_no) AS orders_from_spain FROM sales WHERE country = 'Spain') LIMIT 1001,[[88]],88 orders came from Spain.,,
+D15,What is the gross sales revenue in Australia?,"SELECT * FROM (SELECT ROUND(SUM(revenue), 2) AS gross_sales_revenue_australia FROM sales WHERE country = 'Australia') LIMIT 1001",[[138103.81]],"The gross sales revenue in Australia is £138,103.81.
+Definition used: gross sales revenue = quantity x unit price, in GBP, before subtracting returns.",,

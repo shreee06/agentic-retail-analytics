@@ -10,6 +10,7 @@ import hashlib
 import itertools
 import json
 import math
+import os
 import random
 import sqlite3
 import statistics
@@ -212,18 +213,81 @@ def run_question(agent: RetailAgent, paced: PacedLLM | None, q: dict, db_path: P
     return record
 
 
-def run_evaluation(agent: RetailAgent, paced: PacedLLM | None, questions: list[dict], db_path: Path, progress=None) -> dict:
+def run_evaluation(
+    agent: RetailAgent,
+    paced: PacedLLM | None,
+    questions: list[dict],
+    db_path: Path,
+    progress=None,
+    existing: dict[str, dict] | None = None,
+    on_record=None,
+) -> dict:
+    """Score ``questions``. ``existing`` maps id -> an already scored record that is
+    reused instead of asking again (resume); rate-limited records are never reused
+    because they were never scored. ``on_record`` is called after every new record
+    (the CLI uses it to checkpoint to disk)."""
+    reusable = {i: r for i, r in (existing or {}).items() if not r["rate_limited"]}
     db_hash_before = sha256_of(db_path)
     records = []
     for i, q in enumerate(questions, 1):
-        records.append(run_question(agent, paced, q, db_path))
+        if q["id"] in reusable:
+            records.append(reusable[q["id"]])
+            continue
+        record = run_question(agent, paced, q, db_path)
+        if on_record:
+            on_record(record)
+        records.append(record)
         if progress:
-            progress(i, len(questions), records[-1])
+            progress(i, len(questions), record)
     return {
         "records": records,
         "db_unchanged_over_run": sha256_of(db_path) == db_hash_before,
         "metrics": compute_metrics(records),
     }
+
+
+# --- checkpointing and resuming the frozen test run ---------------------------
+def append_checkpoint(path: Path, record: dict) -> None:
+    with open(path, "a", encoding="utf-8") as handle:
+        handle.write(json.dumps(record, default=str) + "\n")
+        handle.flush()
+        os.fsync(handle.fileno())
+
+
+def load_checkpoint(path: Path) -> dict[str, dict]:
+    """Latest record per question id (a later line replaces an earlier one)."""
+    records: dict[str, dict] = {}
+    if Path(path).exists():
+        for line in Path(path).read_text(encoding="utf-8").splitlines():
+            if line.strip():
+                record = json.loads(line)
+                records[record["id"]] = record
+    return records
+
+
+def plan_test_run(record_path: Path, resume: bool, force: bool) -> tuple[str, dict | None]:
+    """Decide what a test-set run may do: ("new", None) or ("resume", record)."""
+    record_path = Path(record_path)
+    if not record_path.exists():
+        if resume:
+            raise RuntimeError("Nothing to resume: the test set has not been started.")
+        return "new", None
+    record = json.loads(record_path.read_text())
+    if record["status"] == "in_progress":
+        if not resume:
+            raise RuntimeError(
+                f"A test run is in progress in {record['folder']}. Use --resume to continue it "
+                "(finished questions are not asked again)."
+            )
+        return "resume", record
+    if resume:
+        raise RuntimeError("The test run is already complete; there is nothing to resume.")
+    if not force:
+        raise RuntimeError(
+            f"The frozen test set was already scored ({record['folder']}). "
+            "Pass --force only if you accept a second scoring run and will report it."
+        )
+    return "new", None
 
 
 # --- metrics ----------------------------------------------------------------

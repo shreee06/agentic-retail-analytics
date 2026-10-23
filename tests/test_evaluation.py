@@ -429,3 +429,49 @@ def test_manual_review_sample_is_seeded_and_summary_counts_marks(retail_db, tmp_
 def summarize_unfilled(path):
     return ev.summarize_manual_review(path)
 
+
+
+# --- checkpointing / resume ---------------------------------------------------
+def test_resume_reuses_scored_questions_and_retries_only_rate_limited_ones(retail_db, tmp_path):
+    questions = DEV[:4]
+    checkpoint = tmp_path / "records.jsonl"
+    # first session: Q1, Q2 scored; Q3 stays rate-limited; then the "process dies"
+    flaky = FlakyLLM(OracleLLM(questions), failures=0)
+    paced = PacedLLM(flaky, min_interval_s=0.0, sleep=lambda s: None)
+    first = ev.run_evaluation(RetailAgent(paced, retail_db), paced, questions[:2], retail_db,
+                              on_record=lambda r: ev.append_checkpoint(checkpoint, r))
+    limited = FlakyLLM(OracleLLM(questions), failures=10**6)
+    paced2 = PacedLLM(limited, min_interval_s=0.0, max_retries=1, base_backoff_s=0.0, sleep=lambda s: None)
+    ev.run_evaluation(RetailAgent(paced2, retail_db), paced2, questions[2:3], retail_db,
+                      on_record=lambda r: ev.append_checkpoint(checkpoint, r))
+    saved = ev.load_checkpoint(checkpoint)
+    assert set(saved) == {q["id"] for q in questions[:3]} and saved[questions[2]["id"]]["rate_limited"]
+
+    oracle = OracleLLM(questions)
+    paced3 = PacedLLM(oracle, min_interval_s=0.0, sleep=lambda s: None)
+    second = ev.run_evaluation(RetailAgent(paced3, retail_db), paced3, questions, retail_db,
+                               existing=saved, on_record=lambda r: ev.append_checkpoint(checkpoint, r))
+    assert [r["id"] for r in second["records"]] == [q["id"] for q in questions]
+    assert second["records"][0] is saved[questions[0]["id"]]  # reused, not asked again
+    assert second["metrics"]["questions_scored"] == 4 and second["metrics"]["rate_limited_questions"] == []
+    # the finished questions cost no model calls in the second session
+    calls_for_two_new = sum(r["llm_calls"] for r in second["records"][2:])
+    assert paced3.calls == calls_for_two_new
+    assert ev.load_checkpoint(checkpoint)[questions[2]["id"]]["rate_limited"] is False  # latest line wins
+
+
+def test_test_run_planning_rules(tmp_path):
+    record = tmp_path / "test_run_record.json"
+    assert ev.plan_test_run(record, resume=False, force=False) == ("new", None)
+    with pytest.raises(RuntimeError, match="Nothing to resume"):
+        ev.plan_test_run(record, resume=True, force=False)
+    record.write_text(json.dumps({"status": "in_progress", "folder": "test-1", "meta": {}}))
+    with pytest.raises(RuntimeError, match="in progress"):
+        ev.plan_test_run(record, resume=False, force=False)
+    assert ev.plan_test_run(record, resume=True, force=False)[0] == "resume"
+    record.write_text(json.dumps({"status": "complete", "folder": "test-1", "meta": {}}))
+    with pytest.raises(RuntimeError, match="already scored"):
+        ev.plan_test_run(record, resume=False, force=False)
+    with pytest.raises(RuntimeError, match="already complete"):
+        ev.plan_test_run(record, resume=True, force=False)
+    assert ev.plan_test_run(record, resume=False, force=True) == ("new", None)
